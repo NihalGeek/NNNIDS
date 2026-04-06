@@ -14,7 +14,7 @@
 
 ---
 
-## 🚀 Live Demo  
+## 🚀Deployment link 
 👉 [Click here to view the project](https://69d43effeceb5b80b7958b6b--luxury-sawine-0fa1ca.netlify.app/)
 
 </div>
