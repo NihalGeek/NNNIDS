@@ -12,12 +12,10 @@ _OS = platform.system()
 
 
 def _is_admin() -> bool:
-    """Check for elevated privileges using two methods for reliability."""
     try:
         if _OS == "Windows":
             if ctypes.windll.shell32.IsUserAnAdmin() != 0:
                 return True
-            # Fallback: net session fails with code 2 if not elevated
             r = subprocess.run(["net", "session"], capture_output=True)
             return r.returncode == 0
         return False
@@ -26,7 +24,6 @@ def _is_admin() -> bool:
 
 
 def _run(cmd: list[str]) -> tuple[bool, str]:
-    """Run a subprocess command, return (success, output/error message)."""
     try:
         result = subprocess.run(
             cmd, check=True, capture_output=True,
@@ -84,13 +81,6 @@ def _linux_unblock(ip: str) -> tuple[bool, str]:
 
 
 class ResponseEngine:
-    """
-    Executes real mitigation actions on the host OS.
-
-    mode='live'     — executes real firewall commands (requires admin/root).
-    mode='simulate' — logs what would happen, no system changes.
-    """
-
     def __init__(self, mode: str = "live", rate_limit_iface: str = "eth0"):
         self.mode = mode
         self.rate_limit_iface = rate_limit_iface
@@ -197,13 +187,11 @@ class ResponseEngine:
             self.blocked_ips.discard(ip)
             return {"success": True, "message": f"[SIMULATE] Unblocked {ip}"}
 
-        # Always try the OS command — don't gate on in-memory set
         ok, msg = (_windows_unblock(ip) if _OS == "Windows" else _linux_unblock(ip))
         if ok:
             self.blocked_ips.discard(ip)
             return {"success": True, "message": msg}
 
-        # If the rule simply didn't exist, treat that as already-unblocked
         if ip in self.blocked_ips:
             self.blocked_ips.discard(ip)
             return {"success": True, "message": f"{ip} rule not found in firewall (already unblocked)"}

@@ -8,7 +8,6 @@ _MIN_HISTORY_SCANS = 2
 
 
 class BehavioralEngine:
-    """Detection Layer 3 — behavioral heuristics using per-IP rolling baselines."""
 
     def __init__(self):
         self._baselines: dict[str, list[float]] = defaultdict(list)

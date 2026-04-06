@@ -26,10 +26,6 @@ class Packet:
 
 
 def _detect_interface() -> Optional[str]:
-    """
-    Return the best available interface for packet capture.
-    Prefers interfaces with a real (non-loopback, non-169.x) IPv4 address.
-    """
     if not _SCAPY_AVAILABLE:
         return None
 
@@ -68,8 +64,8 @@ def _parse_scapy_packet(pkt) -> Optional[Packet]:
         return None
     is_tcp = TCP in pkt
     is_udp = ScapyUDP in pkt
-    proto = "TCP" if is_tcp else "UDP" if is_udp else "OTHER"
-    flags = str(pkt[TCP].flags) if is_tcp else ""
+    proto    = "TCP" if is_tcp else "UDP" if is_udp else "OTHER"
+    flags    = str(pkt[TCP].flags) if is_tcp else ""
     src_port = pkt[TCP].sport if is_tcp else (pkt[ScapyUDP].sport if is_udp else 0)
     dst_port = pkt[TCP].dport if is_tcp else (pkt[ScapyUDP].dport if is_udp else 0)
     return Packet(
@@ -85,15 +81,6 @@ def _parse_scapy_packet(pkt) -> Optional[Packet]:
 
 
 class NetworkSniffer:
-    """
-    Live packet capture via Scapy.
-
-    Falls back to a NotImplementedError if Npcap is not installed — no silent
-    synthetic fallback, so the caller can surface a clear error to the user.
-
-    Set mode='synthetic' explicitly only for unit tests or demos without network access.
-    """
-
     def __init__(self, mode: str = "live", interface: Optional[str] = None):
         self.mode = mode
         self.interface = interface or (_detect_interface() if mode == "live" else None)
@@ -101,10 +88,6 @@ class NetworkSniffer:
         self._stream_thread: Optional[threading.Thread] = None
         self._stream_buffer: list[Packet] = []
         self._buffer_lock = threading.Lock()
-
-    # ------------------------------------------------------------------
-    # One-shot capture
-    # ------------------------------------------------------------------
 
     def start_capture(self, duration: int = 10) -> list[Packet]:
         if self.mode == "live":
@@ -143,15 +126,7 @@ class NetworkSniffer:
         logger.info("Live capture complete — %d packets", len(captured))
         return captured
 
-    # ------------------------------------------------------------------
-    # Continuous streaming (background thread)
-    # ------------------------------------------------------------------
-
     def start_streaming(self, window_seconds: int = 10, on_window: Optional[Callable] = None):
-        """
-        Continuously capture in rolling windows.
-        on_window(packets) is called after each window completes.
-        """
         if self._streaming:
             return
         self._streaming = True
@@ -180,10 +155,6 @@ class NetworkSniffer:
     def get_stream_buffer(self) -> list[Packet]:
         with self._buffer_lock:
             return list(self._stream_buffer)
-
-    # ------------------------------------------------------------------
-    # Synthetic (for demos / CI only)
-    # ------------------------------------------------------------------
 
     def _capture_synthetic(self, duration: int) -> list[Packet]:
         import random

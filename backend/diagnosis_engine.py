@@ -79,16 +79,13 @@ _THREAT_LABELS: dict = {
 
 
 def _build_reason(detection: dict, severity: str, rule_name: str) -> str:
-    """Return a plain-English reason sentence for the alert."""
-    src_ip    = detection.get("src_ip", "Unknown IP")
-    det_type  = detection.get("type", "UNKNOWN")
-    threat    = _THREAT_LABELS.get(rule_name, "an unclassified threat")
+    src_ip   = detection.get("src_ip", "Unknown IP")
+    det_type = detection.get("type", "UNKNOWN")
+    threat   = _THREAT_LABELS.get(rule_name, "an unclassified threat")
 
-    # Confidence / score
     if det_type == "ML_ANOMALY":
         score = detection.get("anomaly_score", None)
         if score is not None:
-            # Isolation Forest: score ranges roughly -0.7 to 0.1; map to 0-100% confidence
             confidence = min(100, int(round((abs(score) / 0.7) * 100)))
             conf_str = f"{confidence}% ML confidence"
         else:
@@ -102,7 +99,6 @@ def _build_reason(detection: dict, severity: str, rule_name: str) -> str:
     else:
         conf_str = "detected confidence"
 
-    # Extra context from raw metrics
     extras = []
     pkt_rate = detection.get("packet_rate")
     if pkt_rate:
@@ -117,7 +113,7 @@ def _build_reason(detection: dict, severity: str, rule_name: str) -> str:
     if detail:
         extras.append(detail)
 
-    extra_str = (", ".join(extras))
+    extra_str = ", ".join(extras)
     context   = f" ({extra_str})" if extra_str else ""
 
     return (
@@ -127,8 +123,6 @@ def _build_reason(detection: dict, severity: str, rule_name: str) -> str:
 
 
 class DiagnosisEngine:
-    """Enriches raw detections into structured, human-readable alert records."""
-
     def diagnose(self, detection: dict) -> dict:
         rule_name = detection.get("rule_name", "unknown")
         severity  = detection.get("severity", "MEDIUM")

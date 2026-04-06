@@ -22,8 +22,6 @@ def _get_local_ips() -> set[str]:
 
 _LOCAL_IPS = _get_local_ips()
 
-# Signatures tuned for real home/office traffic.
-# Excluded from DDoS/SYN checks: the machine's own IPs (those are normal outbound bursts).
 _SIGNATURES: dict = {
     "port_scan": {
         "condition": lambda f: f["unique_dst_ports"] > 15 and f["syn_ratio"] > 0.75 and f["src_ip"] not in _LOCAL_IPS,
@@ -45,7 +43,6 @@ _SIGNATURES: dict = {
 
 
 class DetectionEngine:
-    """Hybrid threat detector: signature rules + Isolation Forest + behavioral + threat intel."""
 
     def __init__(self):
         self.model = IsolationForest(contamination=0.1, random_state=42, n_estimators=100)
@@ -67,7 +64,6 @@ class DetectionEngine:
         for _, row in features_df.iterrows():
             src_ip = row["src_ip"]
 
-            # Skip own machine and trusted CDN/cloud IPs — they are never threats
             if src_ip in _LOCAL_IPS:
                 continue
             if threat_intel and threat_intel.is_trusted(src_ip)[0]:

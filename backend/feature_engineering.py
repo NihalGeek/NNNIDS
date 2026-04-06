@@ -14,7 +14,6 @@ ML_FEATURES = [
 
 
 class FeatureEngineer:
-    """Extracts per-IP statistical features from raw packet captures."""
 
     def extract_features(self, packets: list) -> pd.DataFrame:
         if not packets:

@@ -18,11 +18,6 @@ const ATTACK_SHORT = {
   baseline_spike:   'Spike',
 };
 
-function timeStr() {
-  return new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-/* Single event card with slide-in animation */
 const EventCard = ({ event }) => {
   const s = SEV_STYLES[event.severity] ?? SEV_STYLES.LOW;
   return (
@@ -52,10 +47,10 @@ const EventCard = ({ event }) => {
 };
 
 const LiveAlertFeed = ({ alerts = [] }) => {
-  const [feed, setFeed]     = useState([]);
-  const [pulse, setPulse]   = useState(false);
-  const seenRef             = useRef(new Set());
-  const feedRef             = useRef(null);
+  const [feed, setFeed]   = useState([]);
+  const [pulse, setPulse] = useState(false);
+  const seenRef           = useRef(new Set());
+  const feedRef           = useRef(null);
 
   useEffect(() => {
     const fresh = alerts.filter(a => !seenRef.current.has(a.id));
@@ -72,7 +67,6 @@ const LiveAlertFeed = ({ alerts = [] }) => {
     setPulse(true);
     setTimeout(() => setPulse(false), 600);
 
-    // Auto-scroll to top
     if (feedRef.current) feedRef.current.scrollTop = 0;
   }, [alerts]);
 
@@ -80,7 +74,6 @@ const LiveAlertFeed = ({ alerts = [] }) => {
 
   return (
     <div className="panel flex flex-col gap-3 h-full" style={{ minHeight: '380px' }}>
-      {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <span
@@ -99,7 +92,6 @@ const LiveAlertFeed = ({ alerts = [] }) => {
         </div>
       </div>
 
-      {/* Feed */}
       <div
         ref={feedRef}
         className="flex-1 overflow-y-auto space-y-1.5 pr-0.5"
@@ -120,7 +112,6 @@ const LiveAlertFeed = ({ alerts = [] }) => {
         )}
       </div>
 
-      {/* Ticker bar at bottom */}
       {feed.length > 0 && (
         <div className="shrink-0 pt-1 border-t border-[#1a2540] flex items-center justify-between">
           <span className="text-[8px] text-gray-700 mono">

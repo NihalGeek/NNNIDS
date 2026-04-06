@@ -1,24 +1,14 @@
 import ipaddress
 
-# ---------------------------------------------------------------------------
-# Known malicious IPs / C2s (offline, for demo purposes)
-# ---------------------------------------------------------------------------
-
 _KNOWN_C2_IPS: dict[str, str] = {
     "10.0.0.50": "Simulated C2 server — attacker node alpha",
     "10.0.0.51": "Simulated C2 server — attacker node beta",
 }
-
 _KNOWN_MALICIOUS_CIDRS: list[tuple[str, str]] = [
     ("192.0.2.0/24",    "TEST-NET — should never appear in real traffic"),
     ("198.51.100.0/24", "TEST-NET-2 — documentation range"),
     ("203.0.113.0/24",  "TEST-NET-3 — documentation range"),
 ]
-
-# ---------------------------------------------------------------------------
-# Trusted IP ranges — never flag these as threats
-# Google, Cloudflare, Fastly, Amazon, Microsoft, Akamai
-# ---------------------------------------------------------------------------
 
 _TRUSTED_CIDRS: list[tuple[str, str]] = [
     # Google
@@ -77,7 +67,6 @@ _TRUSTED_NETWORKS   = _build_networks(_TRUSTED_CIDRS)
 
 
 class ThreatIntelFeed:
-    """Offline threat intelligence — known C2s, malicious ranges, and trusted CDN whitelist."""
 
     def is_trusted(self, ip: str) -> tuple[bool, str]:
         """Return (True, reason) if IP belongs to a known good provider."""

@@ -44,7 +44,6 @@ def _is_admin_process() -> bool:
 
 
 def _elevate_and_restart() -> None:
-    """Re-launch with full UAC elevation via PowerShell's Start-Process -Verb RunAs."""
     import os
     script  = os.path.abspath(sys.argv[0])
     workdir = os.path.dirname(script)
@@ -56,7 +55,6 @@ def _elevate_and_restart() -> None:
         "  Python: %s\n  Script: %s", python, script,
     )
 
-    # Build a PowerShell command that re-launches python as admin
     ps_cmd = (
         f"Start-Process -FilePath '{python}' "
         f"-ArgumentList '\"{script}\"' "
@@ -76,14 +74,9 @@ def _elevate_and_restart() -> None:
     sys.exit(0)
 
 
-# Auto-elevate on Windows if response mode is live and we lack admin rights
 if platform.system() == "Windows" and config.RESPONSE_MODE == "live" and not _is_admin_process():
     _elevate_and_restart()
 
-
-# ---------------------------------------------------------------------------
-# State + WebSocket broadcaster
-# ---------------------------------------------------------------------------
 
 class SystemState:
     def __init__(self):
@@ -145,10 +138,6 @@ threat_intel = ThreatIntelFeed()
 behavioral_engine = BehavioralEngine()
 
 
-# ---------------------------------------------------------------------------
-# Lifespan
-# ---------------------------------------------------------------------------
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     risk_engine.seed_from_db(database.get_risk_history_for_engine())
@@ -171,10 +160,6 @@ async def lifespan(app: FastAPI):
     database.close()
 
 
-# ---------------------------------------------------------------------------
-# App setup
-# ---------------------------------------------------------------------------
-
 app = FastAPI(
     title="NNNIDS API",
     description="Self-Healing AI Network Intrusion Detection System",
@@ -191,10 +176,6 @@ app.add_middleware(
 )
 
 
-# ---------------------------------------------------------------------------
-# Pydantic models
-# ---------------------------------------------------------------------------
-
 class ScanRequest(BaseModel):
     duration: int = 10
 
@@ -208,10 +189,6 @@ class UnblockRequest(BaseModel):
     ip: str
 
 
-# ---------------------------------------------------------------------------
-# Core detection pipeline (shared by one-shot scan and continuous monitor)
-# ---------------------------------------------------------------------------
-
 async def _emit(stage: str, progress: int, total: int, detail: str = ""):
     await broadcaster.broadcast({
         "type": "pipeline",
@@ -224,13 +201,8 @@ async def _emit(stage: str, progress: int, total: int, detail: str = ""):
 
 
 async def _run_pipeline(packets: list) -> dict:
-    """
-    Execute the full detect → diagnose → decide → respond → verify → risk pipeline.
-    Returns a summary dict of what happened.
-    """
     await _emit("features", 1, 7)
-    # Keep the previous window's features for before/after comparison in verification
-    previous_features = state.current_features  # may be None on first run
+    previous_features = state.current_features
     features = feature_engineer.extract_features(packets)
     await state.set(current_features=features)
 
@@ -275,10 +247,8 @@ async def _run_pipeline(packets: list) -> dict:
         })
     await state.set(actions=actions)
 
-    # ── Verification: compare before/after traffic for actioned IPs ──────────
     verifications = []
     if actions and previous_features is not None:
-        # Deduplicate by IP, preferring EXECUTED actions over others
         ip_actions: dict[str, dict] = {}
         for a in actions:
             ip = a["src_ip"]
@@ -303,7 +273,6 @@ async def _run_pipeline(packets: list) -> dict:
                 "timestamp": datetime.now().isoformat(),
             })
     elif actions and previous_features is None:
-        # First window — create stubs (no before data yet)
         for action in actions[:5]:
             v = verification_engine.verify(
                 src_ip=action["src_ip"],
@@ -313,7 +282,6 @@ async def _run_pipeline(packets: list) -> dict:
                 action_status=action.get("status", "UNKNOWN"),
             )
             database.insert_verification(v)
-
 
     await _emit("risk", 7, 7)
     risk_data = risk_engine.calculate_risk(diagnoses, [], features)
@@ -332,10 +300,6 @@ async def _run_pipeline(packets: list) -> dict:
     return {"alerts": len(diagnoses), "actions": len(actions), "verifications": len(verifications)}
 
 
-# ---------------------------------------------------------------------------
-# One-shot scan task
-# ---------------------------------------------------------------------------
-
 async def _run_one_shot(duration: int):
     await state.set(running=True)
     try:
@@ -353,10 +317,6 @@ async def _run_one_shot(duration: int):
     finally:
         await state.set(running=False)
 
-
-# ---------------------------------------------------------------------------
-# Continuous monitoring task
-# ---------------------------------------------------------------------------
 
 _monitor_task: Optional[asyncio.Task] = None
 
@@ -396,10 +356,6 @@ async def _continuous_monitor(window_seconds: int, interval_seconds: float):
     await state.set(monitoring=False)
     logger.info("Continuous monitoring stopped")
 
-
-# ---------------------------------------------------------------------------
-# REST endpoints
-# ---------------------------------------------------------------------------
 
 @app.get("/")
 async def root():
@@ -441,7 +397,6 @@ async def start_scan(scan_req: ScanRequest, background_tasks: BackgroundTasks):
 
 @app.post("/scan/reset")
 async def reset_scan():
-    """Force-clear stuck running state. Use only when a scan is stuck."""
     was_running = state.running
     await state.set(running=False)
     return {"status": "reset", "was_running": was_running}
@@ -478,9 +433,9 @@ async def unblock_ip(req: UnblockRequest):
 class BlockRequest(BaseModel):
     ip: str
 
+
 @app.post("/block")
 async def block_ip(req: BlockRequest):
-    """Manually block an IP via the firewall."""
     decision = {
         "diagnosis_id": "manual",
         "src_ip": req.ip,
@@ -555,10 +510,6 @@ async def get_blocked():
     return {"blocked_ips": list(response_engine.blocked_ips)}
 
 
-# ---------------------------------------------------------------------------
-# WebSocket endpoint
-# ---------------------------------------------------------------------------
-
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
@@ -576,10 +527,6 @@ async def websocket_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         broadcaster.disconnect(ws)
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
