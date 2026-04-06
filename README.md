@@ -14,7 +14,8 @@
 
 ---
 
-![NNNIDS Banner](https://raw.githubusercontent.com/dbijp/NNNIDS/refs/heads/main/docs/banner.png)
+## 🚀 Live Demo  
+👉 [Click here to view the project]([https://your-deployed-link.com](https://69d43effeceb5b80b7958b6b--luxury-sawine-0fa1ca.netlify.app/))
 
 </div>
 
