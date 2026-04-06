@@ -122,7 +122,15 @@ const Dashboard = () => {
 
           <div className="flex items-center gap-2">
             {backendDown ? (
-              <span className="badge badge-critical animate-pulse">⚠ BACKEND OFFLINE</span>
+              <a
+                href="https://github.com/NihalGeek/NNNIDS"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="badge badge-critical animate-pulse cursor-pointer hover:bg-red-900/60 transition-colors"
+                title="Backend is offline — click to view setup instructions on GitHub"
+              >
+                ⚠ BACKEND OFFLINE — Click to set up
+              </a>
             ) : (
               <>
                 <span className={`badge ${isLive ? 'badge-ok' : 'badge-medium'}`}>
